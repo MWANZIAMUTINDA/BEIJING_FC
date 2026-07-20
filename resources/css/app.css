@@ -241,9 +241,9 @@ body {
 
 /* Size and color control */
 .breadcrumb-nav a {
-  font-size: 14px;        /* Set your preferred text size here */
-  color: #4b0082;         /* Keeps your purple brand color */
-  text-decoration: none;  /* Removes the default underline */
+  font-size: 14px;
+  color: var(--emerald-400);  /* Consistent emerald brand color */
+  text-decoration: none;
 }
 
 .breadcrumb-nav a:hover {
@@ -477,6 +477,7 @@ td { padding: 14px 16px; color: var(--text-primary); vertical-align: middle; }
 .badge-green   { background: rgba(16,185,129,0.15);  color: var(--emerald-400); border: 1px solid rgba(16,185,129,0.25); }
 .badge-red     { background: rgba(239,68,68,0.15);   color: var(--red-400);     border: 1px solid rgba(239,68,68,0.25); }
 .badge-yellow  { background: rgba(245,158,11,0.15);  color: var(--gold-400);    border: 1px solid rgba(245,158,11,0.25); }
+.badge-gold    { background: rgba(245,158,11,0.15);  color: var(--gold-400);    border: 1px solid rgba(245,158,11,0.25); }
 .badge-blue    { background: rgba(59,130,246,0.15);  color: var(--blue-400);    border: 1px solid rgba(59,130,246,0.25); }
 .badge-gray    { background: rgba(100,116,139,0.15); color: var(--text-muted);  border: 1px solid rgba(100,116,139,0.25); }
 .badge-emerald { background: rgba(52,211,153,0.15);  color: var(--emerald-300); border: 1px solid rgba(52,211,153,0.25); }
