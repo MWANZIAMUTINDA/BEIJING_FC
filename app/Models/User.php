@@ -5,15 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
         'username', 'name', 'email', 'phone', 'position', 'role',
         'is_active', 'avatar', 'password', 'emergency_contact',
         'emergency_phone', 'jersey_number', 'date_joined', 'billing_type',
+        'nationality', 'league_team_id',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -90,6 +92,7 @@ class User extends Authenticatable
     public function balance()        { return $this->hasOne(MemberBalance::class, 'user_id'); }
     public function expenses()       { return $this->hasMany(Expense::class, 'paid_by'); }
     public function auditLogs()      { return $this->hasMany(AuditLog::class, 'actor_id'); }
+    public function team()           { return $this->belongsTo(LeagueTeam::class, 'league_team_id'); }
 
     public function availabilityFor(int $matchId): Availability
     {
