@@ -69,10 +69,15 @@ class DashboardController extends Controller
             ->selectRaw('category, SUM(amount) as total')
             ->groupBy('category')->get();
 
+        // DB-driver-aware month grouping (MySQL vs SQLite)
+        $isSQLite = \DB::connection()->getDriverName() === 'sqlite';
+        $monthFmt  = $isSQLite ? "strftime('%Y-%m', created_at)" : "DATE_FORMAT(created_at, '%Y-%m')";
+        $monthFmtE = $isSQLite ? "strftime('%Y-%m', expense_date)" : "DATE_FORMAT(expense_date, '%Y-%m')";
+
         // Monthly income chart data (last 6 months)
         $monthlyIncome = Payment::where('status', 'confirmed')
             ->where('created_at', '>=', now()->subMonths(5)->startOfMonth())
-            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(amount) as total")
+            ->selectRaw("{$monthFmt} as month, SUM(amount) as total")
             ->groupBy('month')
             ->orderBy('month')
             ->get()
@@ -81,7 +86,7 @@ class DashboardController extends Controller
         // Monthly expenses chart data (last 6 months)
         $monthlyExpenses = Expense::where('is_approved', true)
             ->where('expense_date', '>=', now()->subMonths(5)->startOfMonth())
-            ->selectRaw("DATE_FORMAT(expense_date, '%Y-%m') as month, SUM(amount) as total")
+            ->selectRaw("{$monthFmtE} as month, SUM(amount) as total")
             ->groupBy('month')
             ->orderBy('month')
             ->get()
@@ -91,7 +96,7 @@ class DashboardController extends Controller
         $monthlyAttendance = Availability::whereHas('match', fn($q) => $q->where('status', 'completed'))
             ->where('status', 'available')
             ->where('created_at', '>=', now()->subMonths(5)->startOfMonth())
-            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as total")
+            ->selectRaw("{$monthFmt} as month, COUNT(*) as total")
             ->groupBy('month')
             ->orderBy('month')
             ->get()
@@ -178,10 +183,12 @@ class DashboardController extends Controller
             : 0;
 
         // Member monthly payment history for chart (last 6 months)
+        $isSQLite2 = \DB::connection()->getDriverName() === 'sqlite';
+        $mFmt = $isSQLite2 ? "strftime('%Y-%m', created_at)" : "DATE_FORMAT(created_at, '%Y-%m')";
         $memberPayHistory = $user->payments()
             ->where('status', 'confirmed')
             ->where('created_at', '>=', now()->subMonths(5)->startOfMonth())
-            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(amount) as total")
+            ->selectRaw("{$mFmt} as month, SUM(amount) as total")
             ->groupBy('month')
             ->orderBy('month')
             ->get()
