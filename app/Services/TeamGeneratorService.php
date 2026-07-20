@@ -10,66 +10,91 @@ use Illuminate\Support\Collection;
 
 class TeamGeneratorService
 {
-    private const POSITIONS_ORDER = ['GK', 'DF', 'MF', 'FW'];
-    private const TEAM_LABELS = ['Team A', 'Team B', 'Team C'];
+    // Team colour labels — matches Module 8 spec
+    private const TEAM_LABELS  = ['Team Red', 'Team Blue', 'Team White'];
+    private const TEAM_COLORS  = ['red', 'blue', 'white'];
+    private const TEAM_EMOJIS  = ['🔴', '🔵', '⚪'];
 
     public function generate(FootballMatch $match, int $numTeams = 2): array
     {
-        // Get all available players
-        $players = $this->getAvailablePlayers($match);
+        $players  = $this->getAvailablePlayers($match);
 
         if ($players->isEmpty()) {
             return ['error' => 'No available players found.'];
         }
 
-        // Ensure at least 2 teams
-        $numTeams = min($numTeams, 3);
+        $numTeams = min(max($numTeams, 2), 3);
 
-        // Group players by position
+        // ── Step 2: Separate by position ─────────────────────────────────
         $byPosition = $players->groupBy('position');
 
-        // Initialize team buckets
+        // ── Step 3: Balance players ───────────────────────────────────────
         $teams = [];
         for ($i = 0; $i < $numTeams; $i++) {
-            $teams[$i] = ['label' => self::TEAM_LABELS[$i], 'players' => []];
+            $teams[$i] = [
+                'label' => self::TEAM_LABELS[$i],
+                'color' => self::TEAM_COLORS[$i],
+                'emoji' => self::TEAM_EMOJIS[$i],
+                'players' => [],
+            ];
         }
 
-        // Distribute GKs first — one per team
-        $gks = $byPosition->get('GK', collect());
-        foreach ($gks->take($numTeams) as $i => $gk) {
-            $teams[$i]['players'][] = $gk;
+        // Assign one GK per team first (most critical position)
+        $gks      = $byPosition->get('GK', collect())->shuffle();
+        $extraGks = collect();
+        foreach ($gks as $i => $gk) {
+            if ($i < $numTeams) {
+                $teams[$i]['players'][] = $gk;
+            } else {
+                $extraGks->push($gk);
+            }
         }
-        // Extra GKs go to outfield distribution
-        $extraGks = $gks->slice($numTeams);
 
-        // Distribute outfield players round-robin by position priority
+        // Distribute outfield players round-robin by position group
+        // DF → MF → FW to ensure positional variety is spread evenly
         $outfield = collect();
         foreach (['DF', 'MF', 'FW'] as $pos) {
-            $outfield = $outfield->merge($byPosition->get($pos, collect()));
+            $outfield = $outfield->merge($byPosition->get($pos, collect())->shuffle());
         }
         $outfield = $outfield->merge($extraGks)->shuffle();
 
-        $i = 0;
+        // Round-robin assignment — fills smallest team first
         foreach ($outfield as $player) {
-            $teams[$i % $numTeams]['players'][] = $player;
-            $i++;
+            $smallest = collect($teams)->sortBy(fn($t) => count($t['players']))->keys()->first();
+            $teams[$smallest]['players'][] = $player;
         }
 
-        // Calculate balance scores and build result
+        // ── Step 4: Build result with balance scores ──────────────────────
         $result = [];
         foreach ($teams as $team) {
-            $playerIds   = collect($team['players'])->pluck('id')->toArray();
-            $balanceScore = $this->calculateBalanceScore(collect($team['players']));
+            $col         = collect($team['players']);
+            $breakdown   = $this->positionBreakdown($col);
+            $score       = $this->calculateBalanceScore($col);
+            $playerIds   = $col->pluck('id')->toArray();
+
             $result[] = [
-                'label'               => $team['label'],
-                'players'             => collect($team['players']),
-                'player_ids'          => $playerIds,
-                'position_balance'    => $balanceScore,
-                'count'               => count($playerIds),
+                'label'            => $team['label'],
+                'color'            => $team['color'],
+                'emoji'            => $team['emoji'],
+                'players'          => $col,
+                'player_ids'       => $playerIds,
+                'position_balance' => $score,
+                'breakdown'        => $breakdown,
+                'count'            => count($playerIds),
             ];
         }
 
         return $result;
+    }
+
+    /**
+     * Calculate overall balance percentage across all generated teams.
+     */
+    public function overallBalance(array $generatedTeams): int
+    {
+        if (empty($generatedTeams)) return 0;
+        $scores = array_map(fn($t) => $t['position_balance'], $generatedTeams);
+        return (int) round(array_sum($scores) / count($scores));
     }
 
     public function save(FootballMatch $match, array $generatedTeams): void
@@ -87,6 +112,8 @@ class TeamGeneratorService
         }
     }
 
+    // ── Private helpers ───────────────────────────────────────────────────────
+
     private function getAvailablePlayers(FootballMatch $match): Collection
     {
         return User::whereHas('availabilities', function ($q) use ($match) {
@@ -94,13 +121,24 @@ class TeamGeneratorService
         })->where('is_active', true)->get();
     }
 
+    private function positionBreakdown(Collection $players): array
+    {
+        $counts = $players->countBy('position');
+        return [
+            'GK' => $counts->get('GK', 0),
+            'DF' => $counts->get('DF', 0),
+            'MF' => $counts->get('MF', 0),
+            'FW' => $counts->get('FW', 0),
+        ];
+    }
+
     private function calculateBalanceScore(Collection $players): int
     {
-        $positionCounts = $players->countBy('position');
-        $hasGK  = $positionCounts->get('GK', 0) >= 1 ? 25 : 0;
-        $hasDef = $positionCounts->get('DF', 0) >= 2 ? 25 : 0;
-        $hasMid = $positionCounts->get('MF', 0) >= 2 ? 25 : 0;
-        $hasFwd = $positionCounts->get('FW', 0) >= 1 ? 25 : 0;
-        return $hasGK + $hasDef + $hasMid + $hasFwd;
+        $counts = $players->countBy('position');
+        $gk  = $counts->get('GK', 0) >= 1 ? 30 : 0;
+        $def = $counts->get('DF', 0) >= 2 ? 25 : ($counts->get('DF', 0) === 1 ? 12 : 0);
+        $mid = $counts->get('MF', 0) >= 2 ? 25 : ($counts->get('MF', 0) === 1 ? 12 : 0);
+        $fwd = $counts->get('FW', 0) >= 1 ? 20 : 0;
+        return min(100, $gk + $def + $mid + $fwd);
     }
 }
