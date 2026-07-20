@@ -18,6 +18,7 @@ class LeagueTeam extends Model
     public function standings() { return $this->hasMany(Standing::class); }
     public function homeResults() { return $this->hasMany(LeagueResult::class, 'home_team_id'); }
     public function awayResults() { return $this->hasMany(LeagueResult::class, 'away_team_id'); }
+    public function players() { return $this->hasMany(User::class, 'league_team_id'); }
 
     public function currentStanding(): ?Standing
     {
