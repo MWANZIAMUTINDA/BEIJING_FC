@@ -56,20 +56,6 @@
                     </div>
 
             <div class="form-grid">
-                {{-- Playing Position --}}
-                <div class="form-group">
-                    <label class="form-label" for="position">Playing Position <span class="required">*</span></label>
-                    <select name="position" id="position" class="form-control @error('position') error @enderror" required>
-                        <option value="GK" {{ old('position', $user->position) === 'GK' ? 'selected' : '' }}>Goalkeeper (GK)</option>
-                        <option value="DF" {{ old('position', $user->position) === 'DF' ? 'selected' : '' }}>Defender (DF)</option>
-                        <option value="MF" {{ old('position', $user->position) === 'MF' ? 'selected' : '' }}>Midfielder (MF)</option>
-                        <option value="FW" {{ old('position', $user->position) === 'FW' ? 'selected' : '' }}>Forward (FW)</option>
-                    </select>
-                    @error('position')
-                    <div class="form-error">{{ $message }}</div>
-                    @enderror
-                </div>
-
                 {{-- System Role --}}
                 <div class="form-group">
                     <label class="form-label" for="role">System Role <span class="required">*</span></label>
@@ -83,13 +69,27 @@
                     <div class="form-error">{{ $message }}</div>
                     @enderror
                 </div>
+
+                {{-- Playing Position --}}
+                <div class="form-group member-only">
+                    <label class="form-label" for="position">Playing Position <span class="required">*</span></label>
+                    <select name="position" id="position" class="form-control @error('position') error @enderror" data-required-if-member>
+                        <option value="GK" {{ old('position', $user->position) === 'GK' ? 'selected' : '' }}>Goalkeeper (GK)</option>
+                        <option value="DF" {{ old('position', $user->position) === 'DF' ? 'selected' : '' }}>Defender (DF)</option>
+                        <option value="MF" {{ old('position', $user->position) === 'MF' ? 'selected' : '' }}>Midfielder (MF)</option>
+                        <option value="FW" {{ old('position', $user->position) === 'FW' ? 'selected' : '' }}>Forward (FW)</option>
+                    </select>
+                    @error('position')
+                    <div class="form-error">{{ $message }}</div>
+                    @enderror
+                </div>
             </div>
 
-            <div class="form-grid">
+            <div class="form-grid member-only">
                 {{-- Billing Model --}}
                 <div class="form-group">
                     <label class="form-label" for="billing_type">Billing Type / Payment Model <span class="required">*</span></label>
-                    <select name="billing_type" id="billing_type" class="form-control @error('billing_type') error @enderror" required>
+                    <select name="billing_type" id="billing_type" class="form-control @error('billing_type') error @enderror" data-required-if-member>
                         <option value="monthly" {{ old('billing_type', $user->billing_type) === 'monthly' ? 'selected' : '' }}>Monthly (KSh 2,080 / Month)</option>
                         <option value="match" {{ old('billing_type', $user->billing_type) === 'match' ? 'selected' : '' }}>Pay Per Match (KSh 350 / Match)</option>
                     </select>
@@ -97,25 +97,69 @@
                     <div class="form-error">{{ $message }}</div>
                     @enderror
                 </div>
+
+                {{-- Nationality --}}
+                <div class="form-group">
+                    <label class="form-label" for="nationality">Nationality <span class="required">*</span></label>
+                    <select name="nationality" id="nationality" class="form-control @error('nationality') error @enderror" data-required-if-member>
+                        <option value="Kenyan" {{ old('nationality', $user->nationality ?? 'Kenyan') === 'Kenyan' ? 'selected' : '' }}>Kenyan</option>
+                        <option value="Ugandan" {{ old('nationality', $user->nationality) === 'Ugandan' ? 'selected' : '' }}>Ugandan</option>
+                        <option value="Tanzanian" {{ old('nationality', $user->nationality) === 'Tanzanian' ? 'selected' : '' }}>Tanzanian</option>
+                        <option value="Rwandan" {{ old('nationality', $user->nationality) === 'Rwandan' ? 'selected' : '' }}>Rwandan</option>
+                        <option value="Burundian" {{ old('nationality', $user->nationality) === 'Burundian' ? 'selected' : '' }}>Burundian</option>
+                        <option value="Congolese" {{ old('nationality', $user->nationality) === 'Congolese' ? 'selected' : '' }}>Congolese</option>
+                        <option value="Other" {{ old('nationality', $user->nationality) === 'Other' ? 'selected' : '' }}>Other</option>
+                    </select>
+                    @error('nationality')
+                    <div class="form-error">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+
+            <div class="form-grid member-only">
+                {{-- Playing Number (Jersey) --}}
+                <div class="form-group">
+                    <label class="form-label" for="jersey_number">Jersey Number (1-99)</label>
+                    <input type="number" name="jersey_number" id="jersey_number" value="{{ old('jersey_number', $user->jersey_number) }}" class="form-control @error('jersey_number') error @enderror" min="1" max="99">
+                    @error('jersey_number')
+                    <div class="form-error">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                {{-- Assigned Team --}}
+                <div class="form-group">
+                    <label class="form-label" for="league_team_id">Assigned League Team</label>
+                    <select name="league_team_id" id="league_team_id" class="form-control @error('league_team_id') error @enderror">
+                        <option value="">-- No Assigned Team (Independent) --</option>
+                        @foreach($teams as $t)
+                        <option value="{{ $t->id }}" {{ old('league_team_id', $user->league_team_id) == $t->id ? 'selected' : '' }}>{{ $t->name }} ({{ $t->short_name }})</option>
+                        @endforeach
+                    </select>
+                    @error('league_team_id')
+                    <div class="form-error">{{ $message }}</div>
+                    @enderror
+                </div>
             </div>
 
                     <div class="form-grid">
-                        {{-- Playing Number (Jersey) --}}
-                        <div class="form-group">
-                            <label class="form-label" for="jersey_number">Jersey Number (1-99)</label>
-                            <input type="number" name="jersey_number" id="jersey_number" value="{{ old('jersey_number', $user->jersey_number) }}" class="form-control @error('jersey_number') error @enderror" min="1" max="99">
-                            @error('jersey_number')
-                            <div class="form-error">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        {{-- Date Joined --}}
                         <div class="form-group">
                             <label class="form-label" for="date_joined">Date Joined</label>
                             <input type="date" name="date_joined" id="date_joined" value="{{ old('date_joined', $user->date_joined ? $user->date_joined->format('Y-m-d') : '') }}" class="form-control @error('date_joined') error @enderror">
                             @error('date_joined')
                             <div class="form-error">{{ $message }}</div>
                             @enderror
+                        </div>
+
+                        {{-- Profile Picture (Avatar) --}}
+                        <div style="display:flex; align-items:center; gap:20px; margin-top: 15px;">
+                            <img src="{{ $user->avatar_url }}" style="width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid var(--glass-border);">
+                            <div style="flex:1;">
+                                <label class="form-label" for="avatar">Change Profile Picture</label>
+                                <input type="file" name="avatar" id="avatar" class="form-control @error('avatar') error @enderror" accept="image/*">
+                                @error('avatar')
+                                <div class="form-error">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
                     </div>
 
@@ -134,18 +178,6 @@
                             <label class="form-label" for="emergency_phone">Emergency Contact Phone</label>
                             <input type="text" name="emergency_phone" id="emergency_phone" value="{{ old('emergency_phone', $user->emergency_phone) }}" class="form-control @error('emergency_phone') error @enderror" placeholder="e.g. 0722000000">
                             @error('emergency_phone')
-                            <div class="form-error">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
-
-                    {{-- Profile Picture (Avatar) --}}
-                    <div style="display:flex; align-items:center; gap:20px; margin: 20px 0;">
-                        <img src="{{ $user->avatar_url }}" style="width:64px; height:64px; border-radius:50%; object-fit:cover; border:2px solid var(--glass-border);">
-                        <div style="flex:1;">
-                            <label class="form-label" for="avatar">Change Profile Picture</label>
-                            <input type="file" name="avatar" id="avatar" class="form-control @error('avatar') error @enderror" accept="image/*">
-                            @error('avatar')
                             <div class="form-error">{{ $message }}</div>
                             @enderror
                         </div>
@@ -217,7 +249,7 @@
                 <span class="card-title">💰 Balance Information</span>
             </div>
             <div class="card-body">
-                @if($user->balance)
+                @if($user->role === 'member' && $user->balance)
                 <div style="text-align:center; padding:12px 0;">
                     <div style="font-size:32px; font-weight:800; font-family:'Outfit',sans-serif; color:{{ $user->balance->isInCredit() ? 'var(--emerald-400)' : 'var(--red-400)' }};">
                         KSh {{ number_format(abs($user->balance->balance)) }}
@@ -272,4 +304,32 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const roleSelect = document.getElementById('role');
+        const memberFields = document.querySelectorAll('.member-only');
+
+        function toggleMemberFields() {
+            const isMember = roleSelect.value === 'member';
+            memberFields.forEach(el => {
+                el.style.display = isMember ? '' : 'none';
+                const inputs = el.querySelectorAll('select, input');
+                inputs.forEach(input => {
+                    if (isMember) {
+                        if (input.hasAttribute('data-required-if-member')) {
+                            input.setAttribute('required', 'required');
+                        }
+                    } else {
+                        input.removeAttribute('required');
+                    }
+                });
+            });
+        }
+
+        roleSelect.addEventListener('change', toggleMemberFields);
+        toggleMemberFields();
+    });
+</script>
 @endsection
+

@@ -63,6 +63,22 @@
                         <div class="text-xs text-muted" style="text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Position</div>
                         <div class="font-bold text-sm">{{ $user->positionLabel() }} ({{ $user->position ?? '—' }})</div>
                     </div>
+                    <div>
+                        <div class="text-xs text-muted" style="text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Nationality</div>
+                        <div class="font-bold text-sm">{{ $user->nationality ?? 'Kenyan' }}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-muted" style="text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Assigned Team</div>
+                        <div class="font-bold text-sm">
+                            @if($user->team)
+                            <a href="{{ route('admin.teams.show', $user->team) }}" class="text-emerald" style="text-decoration:none; font-weight:700;">
+                                {{ $user->team->name }} ({{ $user->team->short_name }})
+                            </a>
+                            @else
+                            <span class="text-muted">Independent</span>
+                            @endif
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

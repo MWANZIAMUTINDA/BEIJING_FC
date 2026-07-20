@@ -1,52 +1,69 @@
 @extends('layouts.app')
-@section('title', 'Club Members')
-@section('page-title', 'Club Members')
+@section('title', 'System Users')
+@section('page-title', 'User Management')
 
 @section('content')
-{{-- Members Stats --}}
-<div class="stats-grid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:18px; margin-bottom:28px;">
-    <div class="stat-card emerald" style="background:var(--navy-800); border:1px solid var(--glass-border); border-radius:var(--radius-lg); padding:20px; display:flex; align-items:center; gap:16px;">
-        <div style="font-size:32px; opacity:0.12;">👥</div>
+{{-- Users Stats --}}
+<div class="stats-grid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:12px; margin-bottom:28px;">
+    <div class="stat-card" style="background:var(--navy-800); border:1px solid var(--glass-border); border-radius:var(--radius-lg); padding:16px; display:flex; align-items:center; gap:12px;">
+        <div style="font-size:28px; opacity:0.12;">👥</div>
         <div>
-            <div style="font-family:'Outfit',sans-serif; font-size:24px; font-weight:900; color:var(--emerald-400);">{{ $stats['total'] }}</div>
-            <div class="text-xs text-muted" style="text-transform:uppercase; letter-spacing:1px;">Total Members</div>
+            <div style="font-family:'Outfit',sans-serif; font-size:20px; font-weight:900; color:var(--text-primary);">{{ $stats['total'] }}</div>
+            <div class="text-xs text-muted" style="text-transform:uppercase; letter-spacing:0.5px; font-size:10px;">Total Users</div>
         </div>
     </div>
-    <div class="stat-card blue" style="background:var(--navy-800); border:1px solid var(--glass-border); border-radius:var(--radius-lg); padding:20px; display:flex; align-items:center; gap:16px;">
-        <div style="font-size:32px; opacity:0.12;">✓</div>
+    <div class="stat-card" style="background:var(--navy-800); border:1px solid var(--glass-border); border-radius:var(--radius-lg); padding:16px; display:flex; align-items:center; gap:12px;">
+        <div style="font-size:28px; opacity:0.12;">👑</div>
         <div>
-            <div style="font-family:'Outfit',sans-serif; font-size:24px; font-weight:900; color:var(--blue-400);">{{ $stats['active'] }}</div>
-            <div class="text-xs text-muted" style="text-transform:uppercase; letter-spacing:1px;">Active Members</div>
+            <div style="font-family:'Outfit',sans-serif; font-size:20px; font-weight:900; color:var(--gold-400);">{{ $stats['admins'] }}</div>
+            <div class="text-xs text-muted" style="text-transform:uppercase; letter-spacing:0.5px; font-size:10px;">Admins</div>
         </div>
     </div>
-    <div class="stat-card red" style="background:var(--navy-800); border:1px solid var(--glass-border); border-radius:var(--radius-lg); padding:20px; display:flex; align-items:center; gap:16px;">
-        <div style="font-size:32px; opacity:0.12;">⚠️</div>
+    <div class="stat-card" style="background:var(--navy-800); border:1px solid var(--glass-border); border-radius:var(--radius-lg); padding:16px; display:flex; align-items:center; gap:12px;">
+        <div style="font-size:28px; opacity:0.12;">📋</div>
         <div>
-            <div style="font-family:'Outfit',sans-serif; font-size:24px; font-weight:900; color:var(--red-400);">{{ $stats['in_debt'] }}</div>
-            <div class="text-xs text-muted" style="text-transform:uppercase; letter-spacing:1px;">In Debt</div>
+            <div style="font-family:'Outfit',sans-serif; font-size:20px; font-weight:900; color:var(--emerald-400);">{{ $stats['coaches'] }}</div>
+            <div class="text-xs text-muted" style="text-transform:uppercase; letter-spacing:0.5px; font-size:10px;">Coaches</div>
         </div>
     </div>
-    <div class="stat-card emerald" style="background:var(--navy-800); border:1px solid var(--glass-border); border-radius:var(--radius-lg); padding:20px; display:flex; align-items:center; gap:16px;">
-        <div style="font-size:32px; opacity:0.12;">💰</div>
+    <div class="stat-card" style="background:var(--navy-800); border:1px solid var(--glass-border); border-radius:var(--radius-lg); padding:16px; display:flex; align-items:center; gap:12px;">
+        <div style="font-size:28px; opacity:0.12;">💰</div>
         <div>
-            <div style="font-family:'Outfit',sans-serif; font-size:24px; font-weight:900; color:var(--emerald-400);">{{ $stats['up_to_date'] }}</div>
-            <div class="text-xs text-muted" style="text-transform:uppercase; letter-spacing:1px;">Up to date</div>
+            <div style="font-family:'Outfit',sans-serif; font-size:20px; font-weight:900; color:var(--blue-400);">{{ $stats['treasurers'] }}</div>
+            <div class="text-xs text-muted" style="text-transform:uppercase; letter-spacing:0.5px; font-size:10px;">Treasurers</div>
+        </div>
+    </div>
+    <div class="stat-card" style="background:var(--navy-800); border:1px solid var(--glass-border); border-radius:var(--radius-lg); padding:16px; display:flex; align-items:center; gap:12px;">
+        <div style="font-size:28px; opacity:0.12;">🏃</div>
+        <div>
+            <div style="font-family:'Outfit',sans-serif; font-size:20px; font-weight:900; color:var(--text-secondary);">{{ $stats['members'] }}</div>
+            <div class="text-xs text-muted" style="text-transform:uppercase; letter-spacing:0.5px; font-size:10px;">Members</div>
         </div>
     </div>
 </div>
 
 <div class="card mb-6">
     <div class="card-header">
-        <span class="card-title">🔍 Search & Filter Members</span>
+        <span class="card-title">🔍 Search & Filter Users</span>
         <a href="{{ route('admin.users.create') }}" class="btn btn-primary btn-sm">
-            + Add New Member
+            + Add New User
         </a>
     </div>
     <div class="card-body">
-        <form method="GET" action="{{ route('admin.users.index') }}" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) 100px; gap:16px; align-items: end;">
+        <form method="GET" action="{{ route('admin.users.index') }}" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) 100px; gap:16px; align-items: end;">
             <div>
                 <label class="form-label">Search Query</label>
-                <input type="text" name="search" value="{{ request('search') }}" class="form-control" placeholder="Name, phone, jersey #...">
+                <input type="text" name="search" value="{{ request('search') }}" class="form-control" placeholder="Name, phone, username...">
+            </div>
+            <div>
+                <label class="form-label">System Role</label>
+                <select name="role" class="form-control">
+                    <option value="">All Roles</option>
+                    <option value="admin" {{ request('role') === 'admin' ? 'selected' : '' }}>Administrator</option>
+                    <option value="coach" {{ request('role') === 'coach' ? 'selected' : '' }}>Coach</option>
+                    <option value="treasurer" {{ request('role') === 'treasurer' ? 'selected' : '' }}>Treasurer</option>
+                    <option value="member" {{ request('role') === 'member' ? 'selected' : '' }}>Member / Player</option>
+                </select>
             </div>
             <div>
                 <label class="form-label">Playing Position</label>
@@ -84,10 +101,12 @@
         <table>
             <thead>
                 <tr>
-                    <th style="width: 50px; text-align: center;">#</th>
-                    <th>Member Profile</th>
+                    <th style="width: 50px; text-align: center;">Jersey</th>
+                    <th>User Profile</th>
+                    <th>Role</th>
                     <th>Position</th>
-                    <th>Contact Phone</th>
+                    <th>Nationality</th>
+                    <th>Assigned Team</th>
                     <th>Outstanding Balance</th>
                     <th>Status</th>
                     <th style="text-align:right;">Actions</th>
@@ -113,17 +132,29 @@
                         </div>
                     </td>
                     <td>
+                        <span class="badge badge-{{ $m->role_color }}">{{ $m->role_label }}</span>
+                    </td>
+                    <td>
                         @if($m->position)
                         <span class="badge pos-{{ strtolower($m->position) }}">{{ $m->position }}</span>
                         @else
                         <span class="text-xs text-muted">—</span>
                         @endif
                     </td>
-                    <td class="text-sm font-medium">
-                        {{ $m->phone }}
+                    <td class="text-sm">
+                        {{ $m->nationality ?? '—' }}
                     </td>
                     <td>
-                        @if($m->balance)
+                        @if($m->team)
+                        <a href="{{ route('admin.teams.show', $m->team) }}" class="badge badge-blue" style="text-decoration:none;">
+                            {{ $m->team->short_name }}
+                        </a>
+                        @else
+                        <span class="text-xs text-muted">—</span>
+                        @endif
+                    </td>
+                    <td>
+                        @if($m->role === 'member' && $m->balance)
                         <strong class="{{ $m->balance->isInCredit() ? 'text-emerald' : 'text-red' }}">
                             KSh {{ number_format(abs($m->balance->balance)) }}
                             {{ $m->balance->isInCredit() ? 'Credit' : 'Owed' }}
@@ -136,22 +167,26 @@
                         @if($m->is_active)
                         <span class="badge badge-green">Active</span>
                         @else
-                        <span class="badge badge-red">Inactive</span>
+                        <span class="badge badge-red">Suspended</span>
                         @endif
                     </td>
                     <td style="text-align:right; white-space:nowrap;">
-                        <a href="{{ route('admin.users.show', $m) }}" class="btn btn-secondary btn-sm" style="padding:4px 8px;">
-                            View
-                        </a>
-                        <a href="{{ route('admin.users.edit', $m) }}" class="btn btn-primary btn-sm" style="padding:4px 8px;">
-                            Edit
-                        </a>
-                        <form method="POST" action="{{ route('admin.users.toggle', $m) }}" style="display:inline;">
-                            @csrf
-                            <button type="submit" class="btn btn-secondary btn-sm" style="padding:4px 8px; min-width: 75px;">
-                                {{ $m->is_active ? 'Suspend' : 'Activate' }}
-                            </button>
-                        </form>
+                        <div class="d-flex justify-end" style="gap:6px; justify-content: flex-end;">
+                            <a href="{{ route('admin.users.show', $m) }}" class="btn btn-secondary btn-sm" style="padding:4px 8px;">
+                                View
+                            </a>
+                            <a href="{{ route('admin.users.edit', $m) }}" class="btn btn-primary btn-sm" style="padding:4px 8px;">
+                                Edit
+                            </a>
+                            @if($m->id !== auth()->id())
+                            <form method="POST" action="{{ route('admin.users.toggle', $m) }}" style="display:inline;">
+                                @csrf
+                                <button type="submit" class="btn btn-secondary btn-sm" style="padding:4px 8px; min-width: 75px;">
+                                    {{ $m->is_active ? 'Suspend' : 'Activate' }}
+                                </button>
+                            </form>
+                            @endif
+                        </div>
                     </td>
                 </tr>
                 @endforeach
@@ -160,7 +195,7 @@
         @else
         <div class="empty-state">
             <div class="empty-state-icon">👥</div>
-            <div class="empty-state-title">No members match filters</div>
+            <div class="empty-state-title">No users found matching search criteria</div>
         </div>
         @endif
     </div>
@@ -171,3 +206,4 @@
     @endif
 </div>
 @endsection
+
