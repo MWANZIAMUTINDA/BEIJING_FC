@@ -2,6 +2,86 @@
 @section('title', 'Expenses')
 @section('page-title', 'Club Expenses')
 
+@push('styles')
+<style>
+/* Modern styling for the monthly expense trend dashboard chart */
+.expense-chart-container {
+    background: var(--surface-2);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+}
+.chart-title {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.visual-bar-chart {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    height: 180px;
+    padding-top: 20px;
+    border-bottom: 1px solid var(--glass-border);
+    gap: 12px;
+}
+.bar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    justify-content: flex-end;
+}
+.bar-pill {
+    width: 100%;
+    max-width: 48px;
+    background: linear-gradient(180deg, #f59e0b, #d97706);
+    border-radius: 6px 6px 0 0;
+    min-height: 4px;
+    transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+.bar-pill:hover {
+    background: linear-gradient(180deg, #fbbf24, #f59e0b);
+}
+.bar-tooltip {
+    position: absolute;
+    top: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface-1);
+    border: 1px solid var(--glass-border);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+.bar-pill:hover .bar-tooltip {
+    opacity: 1;
+}
+.bar-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 8px;
+    font-weight: 500;
+}
+.balance-card {
+    background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(59,130,246,0.1));
+    border: 1px solid rgba(16,185,129,0.2);
+}
+</style>
+@endpush
+
 @section('content')
 {{-- Financial Overview --}}
 <div class="stats-grid">
@@ -17,14 +97,44 @@
         <div class="stat-label">Approved Expenses</div>
         <div class="stat-change down">Disbursed cash</div>
     </div>
-    <div class="stat-card {{ $netBalance >= 0 ? 'emerald' : 'red' }}">
-        <div class="stat-icon">{{ $netBalance >= 0 ? '✓' : '⚠️' }}</div>
-        <div class="stat-value">KSh {{ number_format(abs($netBalance)) }}</div>
-        <div class="stat-label">Net Club Balance</div>
+    <div class="stat-card balance-card">
+        <div class="stat-icon">⚖️</div>
+        <div class="stat-value" style="color: {{ $netBalance >= 0 ? 'var(--emerald-400)' : 'var(--red-400)' }}">
+            KSh {{ number_format(abs($netBalance)) }}
+        </div>
+        <div class="stat-label">Remaining Net Balance</div>
         <div class="stat-change {{ $netBalance >= 0 ? 'up' : 'down' }}">
-            {{ $netBalance >= 0 ? 'In credit surplus' : 'In deficit shortage' }}
+            {{ $netBalance >= 0 ? 'Surplus Reserve Available' : 'Deficit Shortage Warning' }}
         </div>
     </div>
+</div>
+
+{{-- Monthly Expense Graph (Module 10 Requirement) --}}
+<div class="expense-chart-container">
+    <div class="chart-title">📈 Monthly Expense Graph <span class="text-xs text-muted">(Approved Totals)</span></div>
+    @if(count($monthlyTotals))
+        @php
+            $maxVal = count($monthlyTotals) > 0 ? max(max($monthlyTotals), 1000) : 1000;
+        @endphp
+        <div class="visual-bar-chart">
+            @foreach($monthlyTotals as $month => $total)
+                @php
+                    $pctHeight = min(100, ($total / $maxVal) * 100);
+                    $formattedMonth = \Carbon\Carbon::createFromFormat('Y-m', $month)->format('M Y');
+                @endphp
+                <div class="bar-col">
+                    <div class="bar-pill" style="height: {{ $pctHeight }}%">
+                        <div class="bar-tooltip">KSh {{ number_format($total) }}</div>
+                    </div>
+                    <div class="bar-label">{{ $formattedMonth }}</div>
+                </div>
+            @endforeach
+        </div>
+    @else
+        <div style="text-align:center; padding:40px; color:var(--text-muted); font-size:13px;">
+            No historical data found to construct monthly graphs yet.
+        </div>
+    @endif
 </div>
 
 <div class="dashboard-grid">
@@ -66,14 +176,14 @@
                                     View Receipt 📄
                                 </a>
                                 @else
-                                <span class="text-xs text-muted">No Receipt</span>
+                                <span class="text-xs text-muted">No Receipt Attached</span>
                                 @endif
                             </td>
                             <td>
                                 <strong class="text-red">KSh {{ number_format($e->amount) }}</strong>
                             </td>
                             <td>
-                                <span class="badge badge-gray">{{ ucfirst(str_replace('_', ' ', $e->category)) }}</span>
+                                <span class="badge badge-gray">{{ $e->getCategoryLabel() }}</span>
                             </td>
                             <td>
                                 @if($e->is_approved)
@@ -132,7 +242,17 @@
                     @foreach($byCategory as $cat)
                     <div>
                         <div class="d-flex justify-between mb-1" style="font-size:13px;">
-                            <span class="font-medium">{{ ucfirst(str_replace('_', ' ', $cat->category)) }}</span>
+                            @php
+                                $displayLabel = match($cat->category) {
+                                    'turf'         => 'Turf Hire',
+                                    'equipment'    => 'Equipment',
+                                    'refreshments' => 'Refreshments',
+                                    'transport'    => 'Transport',
+                                    'medical'      => 'Medical',
+                                    default        => 'Miscellaneous',
+                                };
+                            @endphp
+                            <span class="font-medium">{{ $displayLabel }}</span>
                             <strong>KSh {{ number_format($cat->total) }}</strong>
                         </div>
                         <div class="progress-bar-wrap">

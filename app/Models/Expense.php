@@ -28,10 +28,11 @@ class Expense extends Model
     public function getCategoryLabel(): string
     {
         return match($this->category) {
-            'turf_hire'    => 'Turf Hire',
+            'turf'         => 'Turf Hire',
             'equipment'    => 'Equipment',
             'refreshments' => 'Refreshments',
             'transport'    => 'Transport',
+            'medical'      => 'Medical',
             default        => 'Miscellaneous',
         };
     }

@@ -22,7 +22,17 @@ class ExpenseController extends Controller
             ->selectRaw('category, SUM(amount) as total, COUNT(*) as count')
             ->groupBy('category')->get();
 
-        return view('expenses.index', compact('expenses', 'totalExpenses', 'totalContributions', 'netBalance', 'byCategory'));
+        // Calculate Monthly Trends (Approved Expenses) for the past 6 months
+        $monthlyTotals = Expense::where('is_approved', true)
+            ->selectRaw("DATE_FORMAT(expense_date, '%Y-%m') as month, SUM(amount) as total")
+            ->groupBy('month')
+            ->orderBy('month', 'asc')
+            ->take(6)
+            ->get()
+            ->pluck('total', 'month')
+            ->toArray();
+
+        return view('expenses.index', compact('expenses', 'totalExpenses', 'totalContributions', 'netBalance', 'byCategory', 'monthlyTotals'));
     }
 
     public function create()
@@ -34,7 +44,7 @@ class ExpenseController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'category'     => 'required|in:turf_hire,equipment,refreshments,transport,miscellaneous',
+            'category'     => 'required|in:turf,equipment,refreshments,transport,medical,miscellaneous',
             'description'  => 'required|string|max:255',
             'amount'       => 'required|numeric|min:1',
             'expense_date' => 'required|date',

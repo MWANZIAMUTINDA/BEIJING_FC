@@ -18,10 +18,11 @@
             <div class="form-group">
                 <label class="form-label" for="category">Category <span class="required">*</span></label>
                 <select name="category" id="category" class="form-control @error('category') error @enderror" required>
-                    <option value="turf_hire" {{ old('category') === 'turf_hire' ? 'selected' : '' }}>Turf / Ground Hire</option>
+                    <option value="turf" {{ old('category') === 'turf' ? 'selected' : '' }}>Turf / Ground Hire</option>
                     <option value="equipment" {{ old('category') === 'equipment' ? 'selected' : '' }}>Balls & Training Equipment</option>
+                    <option value="transport" {{ old('category') === 'transport' ? 'selected' : '' }}>Transport & Logistics</option>
                     <option value="refreshments" {{ old('category') === 'refreshments' ? 'selected' : '' }}>Water & Refreshments</option>
-                    <option value="transport" {{ old('category') === 'transport' ? 'selected' : '' }}>Transport / Logistics</option>
+                    <option value="medical" {{ old('category') === 'medical' ? 'selected' : '' }}>Medical / First Aid</option>
                     <option value="miscellaneous" {{ old('category') === 'miscellaneous' ? 'selected' : '' }}>Miscellaneous</option>
                 </select>
                 @error('category')
