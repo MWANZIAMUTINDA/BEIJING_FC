@@ -15,7 +15,11 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::with('balance')->where('role', 'member');
+        $query = User::with(['balance', 'team']);
+
+        if ($request->filled('role')) {
+            $query->where('role', $request->role);
+        }
 
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
@@ -31,10 +35,11 @@ class UserController extends Controller
         $members = $query->orderBy('name')->paginate(20)->withQueryString();
 
         $stats = [
-            'total'    => User::where('role', 'member')->count(),
-            'active'   => User::where('role', 'member')->where('is_active', true)->count(),
-            'in_debt'  => MemberBalance::where('balance', '<', 0)->count(),
-            'up_to_date' => MemberBalance::where('balance', '>=', 0)->count(),
+            'total'      => User::count(),
+            'admins'     => User::where('role', 'admin')->count(),
+            'coaches'    => User::where('role', 'coach')->count(),
+            'treasurers' => User::where('role', 'treasurer')->count(),
+            'members'    => User::where('role', 'member')->count(),
         ];
 
         return view('admin.users.index', compact('members', 'stats'));
@@ -42,7 +47,8 @@ class UserController extends Controller
 
     public function create()
     {
-        return view('admin.users.create');
+        $teams = \App\Models\LeagueTeam::where('is_active', true)->orderBy('name')->get();
+        return view('admin.users.create', compact('teams'));
     }
 
     public function store(Request $request)
@@ -52,14 +58,16 @@ class UserController extends Controller
             'name'              => 'required|string|max:100',
             'email'             => 'nullable|email|unique:users',
             'phone'             => 'required|string|max:20|unique:users',
-            'position'          => 'required|in:GK,DF,MF,FW',
+            'position'          => 'required_if:role,member|nullable|in:GK,DF,MF,FW',
             'role'              => 'required|in:admin,treasurer,coach,member',
             'password'          => 'required|min:8|confirmed',
             'emergency_contact' => 'nullable|string|max:100',
             'emergency_phone'   => 'nullable|string|max:20',
             'jersey_number'     => 'nullable|integer|between:1,99|unique:users,jersey_number',
             'date_joined'       => 'nullable|date',
-            'billing_type'      => 'required|in:monthly,match',
+            'billing_type'      => 'required_if:role,member|nullable|in:monthly,match',
+            'nationality'       => 'required_if:role,member|nullable|string|max:100',
+            'league_team_id'    => 'nullable|exists:league_teams,id',
             'avatar'            => 'nullable|image|max:2048',
         ]);
 
@@ -87,25 +95,28 @@ class UserController extends Controller
     public function edit(User $user)
     {
         $user->load('balance', 'payments');
-        return view('admin.users.edit', compact('user'));
+        $teams = \App\Models\LeagueTeam::where('is_active', true)->orderBy('name')->get();
+        return view('admin.users.edit', compact('user', 'teams'));
     }
 
     public function update(Request $request, User $user)
     {
-        $old = $user->only(['name', 'phone', 'position', 'role', 'is_active', 'emergency_contact', 'emergency_phone', 'jersey_number', 'date_joined']);
+        $old = $user->only(['name', 'phone', 'position', 'role', 'is_active', 'emergency_contact', 'emergency_phone', 'jersey_number', 'date_joined', 'nationality', 'league_team_id']);
 
         $data = $request->validate([
             'name'              => 'required|string|max:100',
             'email'             => 'nullable|email|unique:users,email,' . $user->id,
             'phone'             => 'required|string|max:20|unique:users,phone,' . $user->id,
-            'position'          => 'required|in:GK,DF,MF,FW',
+            'position'          => 'required_if:role,member|nullable|in:GK,DF,MF,FW',
             'role'              => 'required|in:admin,treasurer,coach,member',
             'is_active'         => 'boolean',
             'emergency_contact' => 'nullable|string|max:100',
             'emergency_phone'   => 'nullable|string|max:20',
             'jersey_number'     => 'nullable|integer|between:1,99|unique:users,jersey_number,' . $user->id,
             'date_joined'       => 'nullable|date',
-            'billing_type'      => 'required|in:monthly,match',
+            'billing_type'      => 'required_if:role,member|nullable|in:monthly,match',
+            'nationality'       => 'required_if:role,member|nullable|string|max:100',
+            'league_team_id'    => 'nullable|exists:league_teams,id',
             'avatar'            => 'nullable|image|max:2048',
         ]);
 
@@ -170,5 +181,19 @@ class UserController extends Controller
         $user->update(['is_active' => !$user->is_active]);
         AuditLog::record($user->is_active ? 'user_activated' : 'user_deactivated', $user);
         return back()->with('success', 'Member status updated.');
+    }
+
+    public function assignRole(Request $request, User $user)
+    {
+        $request->validate(['role' => 'required|in:admin,treasurer,coach,member']);
+        $oldRole = $user->role;
+        $user->update(['role' => $request->role]);
+
+        if ($request->role === 'member') {
+            MemberBalance::recalculate($user->id);
+        }
+
+        AuditLog::record('role_assigned', $user, ['old_role' => $oldRole], ['new_role' => $request->role]);
+        return back()->with('success', 'User privilege updated successfully.');
     }
 }

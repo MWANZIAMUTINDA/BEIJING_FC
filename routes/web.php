@@ -4,11 +4,18 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MatchController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\LeagueController;
+use App\Http\Controllers\InternalLeagueController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\TeamController;
+use App\Http\Controllers\Admin\StadiumController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 
 // ─── Public ───────────────────────────────────────────────────────────────────
 Route::get('/', function () {
@@ -177,10 +184,13 @@ Route::middleware(['auth'])->group(function () {
 
     // ─── Matches (Admin, Coach, Member) ──────────────────────────────────────
     Route::middleware(['role:admin,coach,member'])->group(function () {
-        Route::resource('matches', MatchController::class)->except(['edit', 'update']);
+        Route::resource('matches', MatchController::class)->only(['index','create','store','show','destroy']);
+        Route::get('matches/{match}/edit',    [MatchController::class, 'edit'])->name('matches.edit');
+        Route::put('matches/{match}',         [MatchController::class, 'update'])->name('matches.update');
         Route::post('matches/{match}/availability', [MatchController::class, 'updateAvailability'])->name('matches.availability');
         Route::post('matches/{match}/lock',         [MatchController::class, 'lockAvailability'])->name('matches.lock');
         Route::post('matches/{match}/teams',        [MatchController::class, 'generateTeams'])->name('matches.teams');
+        Route::post('matches/{match}/teams/swap',   [MatchController::class, 'swapPlayers'])->name('matches.teams.swap');
         Route::post('matches/{match}/result',       [MatchController::class, 'recordResult'])->name('matches.result');
     });
 
@@ -203,9 +213,12 @@ Route::middleware(['auth'])->group(function () {
 
     // ─── League (Admin, Coach, Member) ───────────────────────────────────────
     Route::middleware(['role:admin,coach,member'])->group(function () {
-        Route::get('league',         [LeagueController::class, 'standings'])->name('league.standings');
-        Route::get('league/history', [LeagueController::class, 'history'])->name('league.history');
-        Route::post('league/result', [LeagueController::class, 'recordResult'])->name('league.result');
+        Route::get('league',                   [LeagueController::class, 'standings'])->name('league.standings');
+        Route::get('league/history',           [LeagueController::class, 'history'])->name('league.history');
+        Route::post('league/result',           [LeagueController::class, 'recordResult'])->name('league.result');
+        // Internal League (Module 9)
+        Route::get('league/internal',          [InternalLeagueController::class, 'index'])->name('league.internal');
+        Route::post('league/internal/result',  [InternalLeagueController::class, 'storeResult'])->name('league.internal.result');
     });
 
     // ─── Expenses (Admin, Treasurer) ─────────────────────────────────────────
@@ -222,6 +235,20 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::resource('users', UserController::class);
         Route::post('users/{user}/toggle', [UserController::class, 'toggleStatus'])->name('users.toggle');
+        Route::post('users/{user}/role',   [UserController::class, 'assignRole'])->name('users.role');
+        Route::resource('teams', TeamController::class);
+        Route::resource('stadiums', StadiumController::class);
+        // Audit Logs (Module 13)
+        Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs');
+        // Settings (Module 14)
+        Route::get('settings', [SettingController::class, 'index'])->name('settings');
+        Route::post('settings', [SettingController::class, 'update'])->name('settings.update');
+    });
+
+    // ─── Reports (Admin, Treasurer, Coach) ──────────────────────────────────
+    Route::middleware(['role:admin,treasurer,coach'])->group(function () {
+        Route::get('reports', [ReportController::class, 'index'])->name('reports');
+        Route::get('reports/export', [ReportController::class, 'export'])->name('reports.export');
     });
 });
 
