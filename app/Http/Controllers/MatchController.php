@@ -5,33 +5,54 @@ namespace App\Http\Controllers;
 use App\Models\FootballMatch;
 use App\Models\Availability;
 use App\Models\AuditLog;
+use App\Models\MatchTeam;
+use App\Models\Stadium;
 use App\Services\TeamGeneratorService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
 class MatchController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $upcoming = FootballMatch::upcoming()->with(['availabilities', 'creator'])->paginate(8);
-        $past     = FootballMatch::past()->with(['leagueResult'])->take(10)->get();
+        $upcomingQuery = FootballMatch::upcoming()->with(['availabilities', 'creator']);
+        $pastQuery     = FootballMatch::past()->with(['leagueResult']);
+
+        // Search filter
+        if ($request->filled('search')) {
+            $s = '%' . $request->search . '%';
+            $upcomingQuery->where(fn($q) => $q->where('away_team','like',$s)->orWhere('title','like',$s)->orWhere('venue','like',$s));
+            $pastQuery->where(fn($q)     => $q->where('away_team','like',$s)->orWhere('title','like',$s)->orWhere('venue','like',$s));
+        }
+        if ($request->filled('type') && in_array($request->type, ['league','friendly'])) {
+            $upcomingQuery->where('type', $request->type);
+            $pastQuery->where('type', $request->type);
+        }
+        if ($request->filled('status')) {
+            $upcomingQuery->where('status', $request->status);
+        }
+
+        $upcoming = $upcomingQuery->paginate(8)->withQueryString();
+        $past     = $pastQuery->paginate(10)->withQueryString();
         return view('matches.index', compact('upcoming', 'past'));
     }
 
     public function create()
     {
-        return view('matches.create');
+        $stadiums = Stadium::active()->orderBy('name')->get();
+        return view('matches.create', compact('stadiums'));
     }
 
     public function store(Request $request)
     {
         $data = $request->validate([
             'title'      => 'nullable|string|max:100',
+            'away_team'  => 'required|string|max:100',
             'type'       => 'required|in:league,friendly',
-            'match_date' => 'required|date|after:today',
+            'match_date' => 'required|date|after_or_equal:today',
             'match_time' => 'required',
-            'venue'      => 'required|string|max:150',
-            'deadline'   => 'required|date|before:match_date',
+            'venue'      => 'required|string|max:200',
+            'deadline'   => 'required|date',
             'match_fee'  => 'required|numeric|min:0',
             'notes'      => 'nullable|string',
         ]);
@@ -39,11 +60,51 @@ class MatchController extends Controller
         $data['created_by'] = auth()->id();
         $data['status']     = 'upcoming';
 
-        $match = FootballMatch::create($data);
+        // Soft duplicate warning: same date + same hour:minute already exists
+        // Normalize to HH:MM to handle both '16:00' and '16:00:00' formats
+        $timePrefix = substr($data['match_time'], 0, 5); // e.g. '16:00'
+        $duplicate = FootballMatch::where('match_date', 'like', $data['match_date'] . '%')
+            ->whereRaw("SUBSTR(match_time, 1, 5) = ?", [$timePrefix])
+            ->exists();
 
+        $match = FootballMatch::create($data);
         AuditLog::record('match_created', $match, [], $data);
 
-        return redirect()->route('matches.show', $match)->with('success', 'Match created successfully!');
+        $msg = 'Match scheduled successfully!';
+        if ($duplicate) {
+            $msg .= ' ⚠️ Warning: another match is already scheduled at the same date & time.';
+        }
+
+        return redirect()->route('matches.show', $match)->with('success', $msg);
+    }
+
+    public function edit(FootballMatch $match)
+    {
+        $stadiums = Stadium::active()->orderBy('name')->get();
+        return view('matches.edit', compact('match', 'stadiums'));
+    }
+
+    public function update(Request $request, FootballMatch $match)
+    {
+        $old = $match->only(['title','away_team','type','match_date','match_time','venue','deadline','match_fee','status','notes']);
+
+        $data = $request->validate([
+            'title'      => 'nullable|string|max:100',
+            'away_team'  => 'required|string|max:100',
+            'type'       => 'required|in:league,friendly',
+            'match_date' => 'required|date',
+            'match_time' => 'required',
+            'venue'      => 'required|string|max:200',
+            'deadline'   => 'required|date',
+            'match_fee'  => 'required|numeric|min:0',
+            'status'     => 'required|in:upcoming,open,locked,completed',
+            'notes'      => 'nullable|string',
+        ]);
+
+        $match->update($data);
+        AuditLog::record('match_updated', $match, $old, $data);
+
+        return redirect()->route('matches.show', $match)->with('success', 'Match updated successfully!');
     }
 
     public function show(FootballMatch $match)
@@ -174,6 +235,42 @@ class MatchController extends Controller
         AuditLog::record('result_recorded', $match, [], $data);
 
         return back()->with('success', 'Result recorded!');
+    }
+
+    public function swapPlayers(Request $request, FootballMatch $match)
+    {
+        $request->validate([
+            'player_id' => 'required|exists:users,id',
+            'from_team' => 'required|string',
+            'to_team'   => 'required|string',
+        ]);
+
+        $teams = MatchTeam::where('match_id', $match->id)->get()->keyBy('team_label');
+
+        $from = $teams->get($request->from_team);
+        $to   = $teams->get($request->to_team);
+
+        if (!$from || !$to) {
+            return back()->with('error', 'Invalid team selection.');
+        }
+
+        $playerId = (int) $request->player_id;
+
+        // Remove from source team
+        $fromList = array_values(array_filter($from->players_list ?? [], fn($id) => $id != $playerId));
+        // Add to destination team
+        $toList = array_merge($to->players_list ?? [], [$playerId]);
+
+        $from->update(['players_list' => $fromList]);
+        $to->update(['players_list' => $toList]);
+
+        AuditLog::record('team_swap', $match, [], [
+            'player_id' => $playerId,
+            'from'      => $request->from_team,
+            'to'        => $request->to_team,
+        ]);
+
+        return back()->with('success', 'Player swapped successfully!');
     }
 
     public function destroy(FootballMatch $match)

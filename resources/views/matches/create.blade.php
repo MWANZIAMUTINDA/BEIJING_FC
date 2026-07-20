@@ -23,6 +23,15 @@
                 @enderror
             </div>
 
+            {{-- Opponent (Away Team) --}}
+            <div class="form-group">
+                <label class="form-label" for="away_team">Opponent Team Name <span class="required">*</span></label>
+                <input type="text" name="away_team" id="away_team" value="{{ old('away_team') }}" class="form-control @error('away_team') error @enderror" placeholder="e.g. Kibera Black Stars, Eastlands FC..." required>
+                @error('away_team')
+                <div class="form-error">{{ $message }}</div>
+                @enderror
+            </div>
+
             <div class="form-grid">
                 {{-- Type --}}
                 <div class="form-group">

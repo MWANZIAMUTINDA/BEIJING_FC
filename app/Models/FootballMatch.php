@@ -14,7 +14,7 @@ class FootballMatch extends Model
     protected $fillable = [
         'title', 'type', 'match_date', 'match_time', 'venue',
         'deadline', 'status', 'match_fee', 'home_team', 'away_team',
-        'home_score', 'away_score', 'notes', 'created_by',
+        'home_score', 'away_score', 'notes', 'created_by', 'opponent',
     ];
 
     protected function casts(): array
@@ -51,6 +51,27 @@ class FootballMatch extends Model
     public function getFormattedDateAttribute(): string
     {
         return $this->match_date->format('D, d M Y');
+    }
+
+    /**
+     * Opponent accessor — maps the legacy 'opponent' name used in views
+     * to the actual 'away_team' DB column. Also supports a stored 'opponent'
+     * attribute if the column is eventually renamed.
+     */
+    public function getOpponentAttribute(): string
+    {
+        return $this->attributes['opponent']
+            ?? $this->away_team
+            ?? $this->title
+            ?? 'TBA';
+    }
+
+    /**
+     * Allow setting 'opponent' as an alias for 'away_team'.
+     */
+    public function setOpponentAttribute(string $value): void
+    {
+        $this->attributes['away_team'] = $value;
     }
 
     // Relationships
