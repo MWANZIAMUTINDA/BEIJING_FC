@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\StadiumApiController;
 use App\Http\Controllers\Api\ProfileApiController;
 use App\Http\Controllers\Api\AnnouncementApiController;
 use App\Http\Controllers\Api\ExpenseApiController;
+use App\Http\Controllers\Api\StoredProcedureController;
 
 /*
 |--------------------------------------------------------------------------
@@ -123,4 +124,13 @@ Route::middleware('auth:sanctum')->group(function () {
     // ─── Expenses ────────────────────────────────────────────────────────────
     Route::get('/expenses',  [ExpenseApiController::class, 'index']);
     Route::post('/expenses', [ExpenseApiController::class, 'store']);
+
+    // ─── Stored Procedure Endpoints ──────────────────────────────────────────
+    Route::prefix('sp')->group(function () {
+        Route::get('/player/{id}/stats',       [StoredProcedureController::class, 'playerStats']);
+        Route::get('/team/{id}/squad',         [StoredProcedureController::class, 'teamSquad']);
+        Route::get('/matches/upcoming',        [StoredProcedureController::class, 'upcomingMatches']);
+        Route::post('/match/{id}/result',      [StoredProcedureController::class, 'recordMatchResult']);
+        Route::get('/users/activity-report',   [StoredProcedureController::class, 'userActivityReport']);
+    });
 });

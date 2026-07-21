@@ -1,0 +1,44 @@
+{
+  "name": "Beijing FC Management System",
+  "short_name": "Beijing FC",
+  "description": "Professional Football Club Management System for Beijing FC — manage players, matches, stadiums, teams, and more.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#059669",
+  "orientation": "any",
+  "scope": "/",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["sports", "productivity", "utilities"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Matches",
+      "short_name": "Matches",
+      "description": "View scheduled fixtures",
+      "url": "/matches",
+      "icons": [{"src": "/images/icon-192.png", "sizes": "192x192"}]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Go to Dashboard",
+      "url": "/",
+      "icons": [{"src": "/images/icon-192.png", "sizes": "192x192"}]
+    }
+  ]
+}
